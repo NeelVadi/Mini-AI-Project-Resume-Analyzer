@@ -1,0 +1,20 @@
+John Doe
+Software Engineer
+john.doe@email.com | (123) 456-7890 | github.com/johndoe
+
+Professional Summary:
+Passionate, results-driven, and detail-oriented Software Engineer with a proven track record of synergy. Highly motivated to think outside the box.
+
+Education:
+Bachelor of Science in Computer Science
+University of Technology, 2021 - 2025
+
+Experience:
+Software Engineer Intern at TechCorp (2024 - Present)
+- Responsible for maintaining the frontend code in React and JavaScript.
+- Worked on optimizing some database SQL queries.
+- Helped with testing new backend features using Python.
+- Designed and built a new user dashboard module.
+
+Skills:
+JavaScript, React, Node.js, Python, SQL, Git, communication, teamwork
