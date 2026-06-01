@@ -158,6 +158,12 @@ function loadApiKeySettings() {
     state.apiKey = localStorage.getItem('gemini_api_key') || '';
     state.selectedModel = localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
     
+    // Automatically migrate legacy/deprecated models
+    if (state.selectedModel.includes('gemini-1.5') || state.selectedModel.includes('gemini-2.0')) {
+        state.selectedModel = 'gemini-3.5-flash';
+        localStorage.setItem('gemini_model', 'gemini-3.5-flash');
+    }
+    
     elements.inputApiKey.value = state.apiKey;
     elements.selectModel.value = state.selectedModel;
     
