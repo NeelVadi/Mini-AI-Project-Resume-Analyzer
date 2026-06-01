@@ -616,6 +616,40 @@ const AuraMapApp = {
             this.showToast('AI Settings updated successfully.', 'success');
         });
 
+// API Settings Management
+function loadApiKeySettings() {
+    state.apiKey = localStorage.getItem('gemini_api_key') || '';
+    state.selectedModel = localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
+    
+    // Automatically migrate legacy/deprecated models
+    if (state.selectedModel.includes('gemini-1.5') || state.selectedModel.includes('gemini-2.0')) {
+        state.selectedModel = 'gemini-3.5-flash';
+        localStorage.setItem('gemini_model', 'gemini-3.5-flash');
+    }
+    
+    elements.inputApiKey.value = state.apiKey;
+    elements.selectModel.value = state.selectedModel;
+    
+    updateApiStatusUI();
+}
+
+function updateApiStatusUI() {
+    if (state.apiKey) {
+        elements.apiStatusBadge.className = 'badge-connected';
+        elements.geminiHint.style.display = 'none';
+        elements.chatNoKeyWarning.style.display = 'none';
+        elements.chatInput.disabled = false;
+        elements.btnSendMessage.disabled = false;
+        elements.coachStatus.textContent = 'Online & Ready';
+    } else {
+        elements.apiStatusBadge.className = 'badge-disconnected';
+        elements.geminiHint.style.display = 'inline-flex';
+        elements.chatNoKeyWarning.style.display = 'block';
+        elements.chatInput.disabled = true;
+        elements.btnSendMessage.disabled = true;
+        elements.coachStatus.textContent = 'Requires API Key';
+    }
+}
         // Clear API Key
         this.dom.clearApiKeyBtn.addEventListener('click', () => {
             this.dom.apiKeyInput.value = '';
