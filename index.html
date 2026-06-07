@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ session.get('theme', 'dark') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Resume Analyzer | AI-Powered Career Coach</title>
+    <meta name="description" content="Upload your resume to get instant, actionable feedback. Check formatting, content impact, ATS keywords compatibility, and chat with an AI Career Coach.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Static Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <!-- Background Decor Elements -->
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <!-- Hidden Checkbox for Zero-JS API Modal Toggle -->
+    <input type="checkbox" id="api-modal-toggle" class="modal-toggle-input">
+
+    <!-- App Header -->
+    <header class="app-header">
+        <div class="header-container">
+            <a href="/" class="brand" style="text-decoration: none;">
+                <div class="brand-logo">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <h1 style="margin: 0;">Smart<span>Resume</span></h1>
+            </a>
+            
+            <nav class="header-nav">
+                <a href="/toggle-theme" class="nav-btn-icon" aria-label="Toggle theme">
+                    <i class="fa-solid fa-sun icon-light"></i>
+                    <i class="fa-solid fa-moon icon-dark"></i>
+                </a>
+                <label for="api-modal-toggle" class="nav-btn">
+                    <i class="fa-solid fa-key"></i>
+                    <span>Gemini Key</span>
+                    {% if session.get('api_key') %}
+                    <span class="badge-connected"></span>
+                    {% else %}
+                    <span class="badge-disconnected"></span>
+                    {% endif %}
+                </label>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Wrapper -->
+    <main class="main-content">
+        
+        {% if session.get('error_message') %}
+        <div class="error-alert">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span>{{ session['error_message'] }}</span>
+        </div>
+        {% endif %}
+
+        <!-- LANDING VIEW (Rendered if analysis results do not exist in session) -->
+        {% if not session.get('analysis') %}
+        <section id="view-landing" class="view-section">
+            <div class="hero-container">
+                <div class="hero-text">
+                    <span class="hero-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> AI-Powered Analysis (Python Backend)</span>
+                    <h2>Optimize Your Resume For Your Dream Job</h2>
+                    <p class="hero-subtitle">Get instant scoring, style critiques, keyword alignment checks, and tailored bullet point rewrites.</p>
+                </div>
+
+                <form method="POST" action="/analyze" enctype="multipart/form-data">
+                    <div class="config-grid">
+                        <!-- File Upload Zone -->
+                        <div class="card upload-card">
+                            <div class="drop-zone">
+                                <div class="drop-zone-content">
+                                    <div class="upload-icon-wrapper">
+                                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                                    </div>
+                                    <h3>Choose your resume file</h3>
+                                    <p class="text-muted" style="margin-bottom: 15px;">Supports PDF, TXT, or MD format</p>
+                                    <input type="file" name="resume_file" accept=".pdf,.txt,.md" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Job Description Matching -->
+                        <div class="card jd-card">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fa-solid fa-briefcase"></i>
+                                    <h3>Target Job Description <span class="text-optional">(Optional)</span></h3>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">Paste requirements to check ATS keywords and keyword alignment.</p>
+                                <textarea name="job_description" placeholder="Paste the target job description or requirements here... (e.g. React Developer, Python Data Analyst, Project Manager)"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analyze Button Section -->
+                    <div class="action-bar">
+                        <button type="submit" class="btn btn-large btn-accent">
+                            <i class="fa-solid fa-magnifying-glass-chart"></i> Analyze Resume
+                        </button>
+                        
+                        {% if not session.get('api_key') %}
+                        <div class="gemini-hint">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span>Using <strong>Local Heuristics Engine</strong>. Provide a <label for="api-modal-toggle" class="btn-link" style="cursor: pointer;">Gemini Key</label> in the menu to unlock deep AI critiques & Career Coach chat.</span>
+                        </div>
+                        {% else %}
+                        <div class="gemini-hint" style="background-color: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.1);">
+                            <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--success);"></i>
+                            <span style="color: var(--text-secondary);">Using AI Engine: <strong>{{ session.get('model') }}</strong>. Fully loaded.</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </form>
+
+                <!-- Feature Grid -->
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fa-solid fa-gauge-high"></i></div>
+                        <h4>Instant Scorecard</h4>
+                        <p>Detailed evaluation scores across impact, structure, readability, and formatting.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                        <h4>ATS Compliance</h4>
+                        <p>Checks headers, email, phone numbers, and structural compatibility for recruitment systems.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
+                        <h4>Power Verbs & Clichés</h4>
+                        <p>Identifies weak bullet phrasing, buzzwords, and counts achievements to optimize impact.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fa-solid fa-comments"></i></div>
+                        <h4>AI Career Coach</h4>
+                        <p>Interactive Python session to ask follow-up questions and practice custom revisions.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DASHBOARD VIEW (Rendered if analysis results exist in session) -->
+        {% else %}
+        <section id="view-dashboard" class="view-section">
+            
+            <!-- Radios for Zero-JS Tab switching (must be siblings to layout containers) -->
+            <input type="radio" id="tab-summary-radio" name="dashboard-tabs" checked class="tab-radio-input">
+            <input type="radio" id="tab-suggestions-radio" name="dashboard-tabs" class="tab-radio-input">
+            <input type="radio" id="tab-matcher-radio" name="dashboard-tabs" class="tab-radio-input">
+            <input type="radio" id="tab-text-radio" name="dashboard-tabs" class="tab-radio-input">
+
+            <div class="dashboard-header">
+                <form action="/clear" method="POST">
+                    <button type="submit" class="btn-back">
+                        <i class="fa-solid fa-arrow-left"></i> Back to Upload
+                    </button>
+                </form>
+                <div class="dashboard-meta">
+                    <h2>{{ session.get('resume_filename') }}</h2>
+                    {% if session.get('api_key') %}
+                    <span class="badge badge-ai">AI Enhanced</span>
+                    {% else %}
+                    <span class="badge">Local Engine</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Tab Navigation (Labels trigger hidden radio inputs) -->
+            <div class="tabs-nav-wrapper">
+                <div class="tabs-nav">
+                    <label for="tab-summary-radio" class="tab-btn" id="label-summary">
+                        <i class="fa-solid fa-chart-pie"></i> Score Summary
+                    </label>
+                    <label for="tab-suggestions-radio" class="tab-btn" id="label-suggestions">
+                        <i class="fa-solid fa-list-check"></i> Suggestions
+                    </label>
+                    {% if session.get('job_description') %}
+                    <label for="tab-matcher-radio" class="tab-btn" id="label-matcher">
+                        <i class="fa-solid fa-bullseye"></i> Job Matcher
+                    </label>
+                    {% endif %}
+                    <label for="tab-text-radio" class="tab-btn" id="label-text">
+                        <i class="fa-solid fa-file-lines"></i> Extracted Resume
+                    </label>
+                </div>
+            </div>
+
+            <!-- Dashboard Content Grid -->
+            <div class="dashboard-grid">
+                
+                <!-- Main Dashboard Panel -->
+                <div class="dashboard-main-content">
+                    
+                    <!-- TAB 1: Score Summary -->
+                    <div id="tab-summary-content" class="tab-content">
+                        <div class="summary-top-grid">
+                            <!-- Overall Score Card -->
+                            <div class="card score-card">
+                                <h3>Overall Score</h3>
+                                <div class="score-circle-container">
+                                    <svg class="score-svg" viewBox="0 0 100 100">
+                                        <circle class="score-bg-circle" cx="50" cy="50" r="40"></circle>
+                                        <!-- Server-calculated dashoffset -->
+                                        {% set overall = session['analysis']['overallScore'] %}
+                                        {% set offset = 251.2 - (overall / 100) * 251.2 %}
+                                        
+                                        {% if overall >= 80 %}
+                                            {% set circle_cls = 'circle-success' %}
+                                        {% elif overall >= 60 %}
+                                            {% set circle_cls = 'circle-warning' %}
+                                        {% else %}
+                                            {% set circle_cls = 'circle-danger' %}
+                                        {% endif %}
+                                        <circle class="score-fill-circle {{ circle_cls }}" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="{{ offset }}"></circle>
+                                    </svg>
+                                    <div class="score-number-display">
+                                        <span class="score-value">{{ overall }}</span>
+                                        <span class="score-max">/100</span>
+                                    </div>
+                                </div>
+                                
+                                {% if overall >= 80 %}
+                                    <p class="score-verdict text-success">Excellent Resume!</p>
+                                {% elif overall >= 60 %}
+                                    <p class="score-verdict text-warning">Good / Competitive</p>
+                                {% else %}
+                                    <p class="score-verdict text-danger">Needs Refinement</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Metrics Categories Grid -->
+                            <div class="metrics-grid">
+                                <div class="card metric-tile">
+                                    <div class="metric-header">
+                                        <span>Formatting & Style</span>
+                                        <span class="metric-score text-success">{{ session['analysis']['metrics']['formattingScore'] }}/100</span>
+                                    </div>
+                                    <div class="metric-progress-container">
+                                        <div class="metric-progress-fill bg-success" style="width: {{ session['analysis']['metrics']['formattingScore'] }}%;"></div>
+                                    </div>
+                                    <p class="metric-desc">Checks structural sections, length, and contact details.</p>
+                                </div>
+                                
+                                <div class="card metric-tile">
+                                    <div class="metric-header">
+                                        <span>Impact & Verbs</span>
+                                        <span class="metric-score text-warning">{{ session['analysis']['metrics']['impactScore'] }}/100</span>
+                                    </div>
+                                    <div class="metric-progress-container">
+                                        <div class="metric-progress-fill bg-warning" style="width: {{ session['analysis']['metrics']['impactScore'] }}%;"></div>
+                                    </div>
+                                    <p class="metric-desc">Usage of action verbs, metrics, and avoidance of clichés.</p>
+                                </div>
+                                
+                                <div class="card metric-tile">
+                                    <div class="metric-header">
+                                        <span>Core Sections</span>
+                                        <span class="metric-score text-info">{{ session['analysis']['metrics']['sectionsScore'] }}/100</span>
+                                    </div>
+                                    <div class="metric-progress-container">
+                                        <div class="metric-progress-fill bg-info" style="width: {{ session['analysis']['metrics']['sectionsScore'] }}%;"></div>
+                                    </div>
+                                    <p class="metric-desc">Verifies presence of standard resume categories.</p>
+                                </div>
+                                
+                                <div class="card metric-tile">
+                                    <div class="metric-header">
+                                        <span>Readability & Flow</span>
+                                        <span class="metric-score text-accent">{{ session['analysis']['metrics']['readabilityScore'] }}/100</span>
+                                    </div>
+                                    <div class="metric-progress-container">
+                                        <div class="metric-progress-fill bg-accent" style="width: {{ session['analysis']['metrics']['readabilityScore'] }}%;"></div>
+                                    </div>
+                                    <p class="metric-desc">Looks at average sentence length and overall word count.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Checklists Grid -->
+                        <div class="checklist-container">
+                            <!-- Passed Checks -->
+                            <div class="card check-list-card">
+                                <div class="card-header border-bottom">
+                                    <div class="card-title text-success">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                        <h3>Checks Passed</h3>
+                                    </div>
+                                </div>
+                                <ul class="checklist-items">
+                                    {% set count = namespace(passed=0) %}
+                                    
+                                    {% if session['analysis']['sections']['education'] %}
+                                        <li><i class="fa-solid fa-circle-check text-success"></i> <div><strong>Education Section detected</strong></div></li>
+                                        {% set count.passed = count.passed + 1 %}
+                                    {% endif %}
+                                    {% if session['analysis']['sections']['experience'] %}
+                                        <li><i class="fa-solid fa-circle-check text-success"></i> <div><strong>Experience Section detected</strong></div></li>
+                                        {% set count.passed = count.passed + 1 %}
+                                    {% endif %}
+                                    {% if session['analysis']['sections']['skills'] %}
+                                        <li><i class="fa-solid fa-circle-check text-success"></i> <div><strong>Skills Section detected</strong></div></li>
+                                        {% set count.passed = count.passed + 1 %}
+                                    {% endif %}
+                                    {% if session['analysis']['sections']['projects'] %}
+                                        <li><i class="fa-solid fa-circle-check text-success"></i> <div><strong>Projects Section detected</strong></div></li>
+                                        {% set count.passed = count.passed + 1 %}
+                                    {% endif %}
+                                    {% if session['analysis']['sections']['summary'] %}
+                                        <li><i class="fa-solid fa-circle-check text-success"></i> <div><strong>Summary / Profile Section detected</strong></div></li>
+                                        {% set count.passed = count.passed + 1 %}
+                                    {% endif %}
+                                    {% if session['analysis']['contact']['email'] %}
+                                        <li><i class="fa-solid fa-circle-check text-success"></i> <div><strong>Valid email address found</strong></div></li>
+                                        {% set count.passed = count.passed + 1 %}
+                                    {% endif %}
+                                    {% if session['analysis']['contact']['phone'] %}
+                                        <li><i class="fa-solid fa-circle-check text-success"></i> <div><strong>Valid phone number found</strong></div></li>
+                                        {% set count.passed = count.passed + 1 %}
+                                    {% endif %}
+                                    {% if session['analysis']['contact']['links'] %}
+                                        <li><i class="fa-solid fa-circle-check text-success"></i> <div><strong>Professional profiles links found</strong></div></li>
+                                        {% set count.passed = count.passed + 1 %}
+                                    {% endif %}
+                                    {% if session['analysis']['actionVerbsCount'] >= 6 %}
+                                        <li><i class="fa-solid fa-circle-check text-success"></i> <div><strong>Great action verbs count ({{ session['analysis']['actionVerbsCount'] }})</strong></div></li>
+                                        {% set count.passed = count.passed + 1 %}
+                                    {% endif %}
+                                    {% if session['analysis']['clichésCount'] == 0 %}
+                                        <li><i class="fa-solid fa-circle-check text-success"></i> <div><strong>No overused clichés detected</strong></div></li>
+                                        {% set count.passed = count.passed + 1 %}
+                                    {% endif %}
+                                    {% if session['analysis']['quantificationCount'] >= 5 %}
+                                        <li><i class="fa-solid fa-circle-check text-success"></i> <div><strong>Metrics-driven results ({{ session['analysis']['quantificationCount'] }} numbers)</strong></div></li>
+                                        {% set count.passed = count.passed + 1 %}
+                                    {% endif %}
+                                    {% if session['analysis']['lengthRating'] == 'good' %}
+                                        <li><i class="fa-solid fa-circle-check text-success"></i> <div><strong>Optimal word count ({{ session['analysis']['wordCount'] }} words)</strong></div></li>
+                                        {% set count.passed = count.passed + 1 %}
+                                    {% endif %}
+                                    
+                                    {% if count.passed == 0 %}
+                                        <li>No items checked.</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+
+                            <!-- Critical Alerts -->
+                            <div class="card check-list-card">
+                                <div class="card-header border-bottom">
+                                    <div class="card-title text-danger">
+                                        <i class="fa-solid fa-circle-exclamation"></i>
+                                        <h3>Important Alerts</h3>
+                                    </div>
+                                </div>
+                                <ul class="checklist-items">
+                                    {% set count_alert = namespace(alerts=0) %}
+                                    
+                                    {% if not session['analysis']['sections']['education'] %}
+                                        <li><i class="fa-solid fa-circle-exclamation text-danger"></i> <div><strong>Missing Section: Education</strong><p class="text-muted" style="margin-top:2px; font-size:12px;">Add credentials or degree information.</p></div></li>
+                                        {% set count_alert.alerts = count_alert.alerts + 1 %}
+                                    {% endif %}
+                                    {% if not session['analysis']['sections']['experience'] %}
+                                        <li><i class="fa-solid fa-circle-exclamation text-danger"></i> <div><strong>Missing Section: Experience</strong><p class="text-muted" style="margin-top:2px; font-size:12px;">Add details regarding previous jobs or internships.</p></div></li>
+                                        {% set count_alert.alerts = count_alert.alerts + 1 %}
+                                    {% endif %}
+                                    {% if not session['analysis']['sections']['skills'] %}
+                                        <li><i class="fa-solid fa-circle-exclamation text-danger"></i> <div><strong>Missing Section: Skills</strong><p class="text-muted" style="margin-top:2px; font-size:12px;">Add technical languages, tools, or expert competencies.</p></div></li>
+                                        {% set count_alert.alerts = count_alert.alerts + 1 %}
+                                    {% endif %}
+                                    {% if not session['analysis']['sections']['projects'] %}
+                                        <li><i class="fa-solid fa-circle-exclamation text-danger"></i> <div><strong>Missing Section: Projects</strong><p class="text-muted" style="margin-top:2px; font-size:12px;">Add personal or university engineering works.</p></div></li>
+                                        {% set count_alert.alerts = count_alert.alerts + 1 %}
+                                    {% endif %}
+                                    {% if not session['analysis']['sections']['summary'] %}
+                                        <li><i class="fa-solid fa-circle-exclamation text-danger"></i> <div><strong>Missing Section: Profile Summary</strong><p class="text-muted" style="margin-top:2px; font-size:12px;">Write a brief intro detailing your career goals.</p></div></li>
+                                        {% set count_alert.alerts = count_alert.alerts + 1 %}
+                                    {% endif %}
+                                    {% if not session['analysis']['contact']['email'] %}
+                                        <li><i class="fa-solid fa-circle-exclamation text-danger"></i> <div><strong>No Email Address detected</strong><p class="text-muted" style="margin-top:2px; font-size:12px;">Check syntax or add contact email details.</p></div></li>
+                                        {% set count_alert.alerts = count_alert.alerts + 1 %}
+                                    {% endif %}
+                                    {% if not session['analysis']['contact']['phone'] %}
+                                        <li><i class="fa-solid fa-circle-exclamation text-danger"></i> <div><strong>No Phone Number detected</strong><p class="text-muted" style="margin-top:2px; font-size:12px;">Ensure recruiters have a clear contact number.</p></div></li>
+                                        {% set count_alert.alerts = count_alert.alerts + 1 %}
+                                    {% endif %}
+                                    {% if not session['analysis']['contact']['links'] %}
+                                        <li><i class="fa-solid fa-circle-exclamation text-danger"></i> <div><strong>No Profile Links found</strong><p class="text-muted" style="margin-top:2px; font-size:12px;">Include professional links (LinkedIn/GitHub/Portfolio).</p></div></li>
+                                        {% set count_alert.alerts = count_alert.alerts + 1 %}
+                                    {% endif %}
+                                    {% if session['analysis']['actionVerbsCount'] < 6 %}
+                                        <li><i class="fa-solid fa-circle-exclamation text-danger"></i> <div><strong>Weak Verbs density ({{ session['analysis']['actionVerbsCount'] }})</strong><p class="text-muted" style="margin-top:2px; font-size:12px;">Use action verbs (e.g., spearheaded, optimized) to begin bullet points.</p></div></li>
+                                        {% set count_alert.alerts = count_alert.alerts + 1 %}
+                                    {% endif %}
+                                    {% if session['analysis']['clichésCount'] > 0 %}
+                                        <li><i class="fa-solid fa-circle-exclamation text-danger"></i> <div><strong>Clichés & Buzzwords found ({{ session['analysis']['clichésCount'] }})</strong><p class="text-muted" style="margin-top:2px; font-size:12px;">Vague claims: {{ session['analysis']['clichésFound'] | join(', ') }}. Swap with metric proofs.</p></div></li>
+                                        {% set count_alert.alerts = count_alert.alerts + 1 %}
+                                    {% endif %}
+                                    {% if session['analysis']['quantificationCount'] < 5 %}
+                                        <li><i class="fa-solid fa-circle-exclamation text-danger"></i> <div><strong>Low quantification details</strong><p class="text-muted" style="margin-top:2px; font-size:12px;">Add metrics or numerical outcomes to show professional output size.</p></div></li>
+                                        {% set count_alert.alerts = count_alert.alerts + 1 %}
+                                    {% endif %}
+                                    {% if session['analysis']['lengthRating'] == 'too-short' %}
+                                        <li><i class="fa-solid fa-circle-exclamation text-danger"></i> <div><strong>Document is very short ({{ session['analysis']['wordCount'] }} words)</strong><p class="text-muted" style="margin-top:2px; font-size:12px;">Expand technical project details or achievements.</p></div></li>
+                                        {% set count_alert.alerts = count_alert.alerts + 1 %}
+                                    {% endif %}
+                                    {% if session['analysis']['lengthRating'] == 'too-long' %}
+                                        <li><i class="fa-solid fa-circle-exclamation text-danger"></i> <div><strong>Document is too long ({{ session['analysis']['wordCount'] }} words)</strong><p class="text-muted" style="margin-top:2px; font-size:12px;">Keep details concise. Limit to 1-2 pages maximum.</p></div></li>
+                                        {% set count_alert.alerts = count_alert.alerts + 1 %}
+                                    {% endif %}
+                                    
+                                    {% if count_alert.alerts == 0 %}
+                                        <li><i class="fa-solid fa-circle-check text-success"></i> <div><strong>All checklists cleared! Zero warnings.</strong></div></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: Suggestions Details (Zero JS - using details summaries) -->
+                    <div id="tab-suggestions-content" class="tab-content">
+                        <!-- AI Specific Suggestions (Pre-rendered from Gemini session) -->
+                        {% if session.get('ai_suggestions') %}
+                        <div class="card premium-card">
+                            <div class="premium-header">
+                                <div class="premium-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Powered</div>
+                                <h3>Deep Resume Review & STAR Bullet Rewrites</h3>
+                            </div>
+                            <div class="premium-body">
+                                <div class="markdown-content">
+                                    {{ session['ai_suggestions'] | safe }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Standard suggestions details list -->
+                        <div class="suggestions-list-wrapper">
+                            <details class="card suggestion-card-item" open>
+                                <summary class="suggestion-header">
+                                    <div class="sugg-title-group">
+                                        <i class="fa-solid fa-cubes text-info"></i>
+                                        <span>Structural Sections Assessment</span>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-down toggle-icon"></i>
+                                </summary>
+                                <div class="suggestion-body">
+                                    <ul>
+                                        <li class="{% if session['analysis']['sections']['summary'] %}check-pass{% else %}check-fail{% endif %}">
+                                            {% if session['analysis']['sections']['summary'] %}
+                                            <span class="sugg-badge pass">Pass</span>
+                                            {% else %}
+                                            <span class="sugg-badge fail">Missing</span>
+                                            {% endif %}
+                                            <strong>Summary Section</strong>: Summarizes core engineering specialties at the top.
+                                        </li>
+                                        <li class="{% if session['analysis']['sections']['experience'] %}check-pass{% else %}check-fail{% endif %}">
+                                            {% if session['analysis']['sections']['experience'] %}
+                                            <span class="sugg-badge pass">Pass</span>
+                                            {% else %}
+                                            <span class="sugg-badge fail">Missing</span>
+                                            {% endif %}
+                                            <strong>Experience Section</strong>: Provides proof of practical employment history.
+                                        </li>
+                                        <li class="{% if session['analysis']['sections']['skills'] %}check-pass{% else %}check-fail{% endif %}">
+                                            {% if session['analysis']['sections']['skills'] %}
+                                            <span class="sugg-badge pass">Pass</span>
+                                            {% else %}
+                                            <span class="sugg-badge fail">Missing</span>
+                                            {% endif %}
+                                            <strong>Skills Section</strong>: Evaluated directly by search index crawlers.
+                                        </li>
+                                        <li class="{% if session['analysis']['sections']['education'] %}check-pass{% else %}check-fail{% endif %}">
+                                            {% if session['analysis']['sections']['education'] %}
+                                            <span class="sugg-badge pass">Pass</span>
+                                            {% else %}
+                                            <span class="sugg-badge fail">Missing</span>
+                                            {% endif %}
+                                            <strong>Education Section</strong>: Validates course degrees.
+                                        </li>
+                                        <li class="{% if session['analysis']['sections']['projects'] %}check-pass{% else %}check-warn{% endif %}">
+                                            {% if session['analysis']['sections']['projects'] %}
+                                            <span class="sugg-badge pass">Pass</span>
+                                            {% else %}
+                                            <span class="sugg-badge warn">Warning</span>
+                                            {% endif %}
+                                            <strong>Projects Section</strong>: Showcases practical coding capability.
+                                        </li>
+                                    </ul>
+                                </div>
+                            </details>
+
+                            <details class="card suggestion-card-item">
+                                <summary class="suggestion-header">
+                                    <div class="sugg-title-group">
+                                        <i class="fa-solid fa-bullseye text-warning"></i>
+                                        <span>Content Impact & Bullet Points</span>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-down toggle-icon"></i>
+                                </summary>
+                                <div class="suggestion-body">
+                                    <ul>
+                                        <li class="{% if session['analysis']['quantificationCount'] >= 5 %}check-pass{% else %}check-warn{% endif %}">
+                                            <span class="sugg-badge {% if session['analysis']['quantificationCount'] >= 5 %}pass{% else %}warn{% endif %}">Quantification</span>
+                                            Your resume has <strong>{{ session['analysis']['quantificationCount'] }} metrics</strong> (numbers, percentages, currencies). 
+                                            Target at least 5 metrics to prove impact.
+                                        </li>
+                                        <li class="{% if session['analysis']['actionVerbsCount'] >= 6 %}check-pass{% else %}check-warn{% endif %}">
+                                            <span class="sugg-badge {% if session['analysis']['actionVerbsCount'] >= 6 %}pass{% else %}warn{% endif %}">Action Verbs</span>
+                                            Found <strong>{{ session['analysis']['actionVerbsCount'] }} action-oriented verbs</strong>. 
+                                            {% if session['analysis']['actionVerbsFound'] %}
+                                            Verbs found: <em>{{ session['analysis']['actionVerbsFound'] | join(', ') }}</em>.
+                                            {% else %}
+                                            No standard active verbs starting your bullets were found.
+                                            {% endif %}
+                                        </li>
+                                    </ul>
+                                </div>
+                            </details>
+
+                            <details class="card suggestion-card-item">
+                                <summary class="suggestion-header">
+                                    <div class="sugg-title-group">
+                                        <i class="fa-solid fa-paint-roller text-success"></i>
+                                        <span>Formatting, Contact Info & Length</span>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-down toggle-icon"></i>
+                                </summary>
+                                <div class="suggestion-body">
+                                    <ul>
+                                        <li class="{% if session['analysis']['lengthRating'] == 'good' %}check-pass{% else %}check-fail{% endif %}">
+                                            <span class="sugg-badge {% if session['analysis']['lengthRating'] == 'good' %}pass{% else %}fail{% endif %}">Word Count</span>
+                                            Your resume has <strong>{{ session['analysis']['wordCount'] }} words</strong>. Ideal is 300 to 1000.
+                                        </li>
+                                        <li class="{% if session['analysis']['contact']['email'] and session['analysis']['contact']['phone'] %}check-pass{% else %}check-fail{% endif %}">
+                                            <span class="sugg-badge {% if session['analysis']['contact']['email'] and session['analysis']['contact']['phone'] %}pass{% else %}fail{% endif %}">Contact Details</span>
+                                            Email: {{ 'Detected' if session['analysis']['contact']['email'] else 'Missing' }} | 
+                                            Phone: {{ 'Detected' if session['analysis']['contact']['phone'] else 'Missing' }}.
+                                        </li>
+                                        <li class="{% if session['analysis']['contact']['links'] %}check-pass{% else %}check-warn{% endif %}">
+                                            <span class="sugg-badge {% if session['analysis']['contact']['links'] %}pass{% else %}warn{% endif %}">Profile Links</span>
+                                            Professional URL: {{ 'Detected' if session['analysis']['contact']['links'] else 'Missing' }}. Add LinkedIn or GitHub links.
+                                        </li>
+                                    </ul>
+                                </div>
+                            </details>
+
+                            <details class="card suggestion-card-item">
+                                <summary class="suggestion-header">
+                                    <div class="sugg-title-group">
+                                        <i class="fa-solid fa-triangle-exclamation text-danger"></i>
+                                        <span>Clichés & Buzzwords Avoidance</span>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-down toggle-icon"></i>
+                                </summary>
+                                <div class="suggestion-body">
+                                    <ul>
+                                        {% if session['analysis']['clichésCount'] == 0 %}
+                                        <li class="check-pass">
+                                            <span class="sugg-badge pass">Clean</span>
+                                            Excellent! No standard buzzwords detected.
+                                        </li>
+                                        {% else %}
+                                        <li class="check-fail">
+                                            <span class="sugg-badge fail">Buzzwords Found</span>
+                                            Avoid overused cliché terms: <em>{{ session['analysis']['clichésFound'] | join(', ') }}</em>.
+                                        </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: Job Matcher (Rendered if Job Description exists in session) -->
+                    {% if session.get('job_description') %}
+                    <div id="tab-matcher-content" class="tab-content">
+                        <!-- Score panel -->
+                        <div class="match-score-grid">
+                            <div class="card match-score-card">
+                                <h3>ATS Fit Score</h3>
+                                <div class="match-score-display">
+                                    <span>{{ session['local_match']['score'] }}%</span>
+                                </div>
+                                <p class="text-muted">Matches {{ session['local_match']['matched']|length }} of {{ session['local_match']['totalCount'] }} target skills detected.</p>
+                            </div>
+
+                            <!-- Keywords summary -->
+                            <div class="card keywords-card">
+                                <div class="card-header border-bottom">
+                                    <h3>Skills & Keywords Match</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="keywords-group">
+                                        <h4>Matched Keywords</h4>
+                                        <div class="tags-container">
+                                            {% for kw in session['local_match']['matched'] %}
+                                            <span class="tag tag-matched">{{ kw }}</span>
+                                            {% else %}
+                                            <span class="tag-empty">No skills matched yet.</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+
+                                    <div class="keywords-group">
+                                        <h4>Missing Target Keywords <span class="text-small text-danger">(Recommend Adding)</span></h4>
+                                        <div class="tags-container">
+                                            {% for kw in session['local_match']['missing'] %}
+                                            <span class="tag tag-missing">{{ kw }}</span>
+                                            {% else %}
+                                            <span class="tag-empty">No missing core keywords!</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gemini AI Tailoring analysis -->
+                        {% if session.get('ai_match') %}
+                        <div class="card premium-card">
+                            <div class="premium-header">
+                                <div class="premium-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Powered Match</div>
+                                <h3>AI Matching Analysis</h3>
+                            </div>
+                            <div class="premium-body">
+                                <div class="markdown-content">
+                                    {{ session['ai_match'] | safe }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- TAB 4: Extracted Text -->
+                    <div id="tab-text-content" class="tab-content">
+                        <div class="card resume-text-card">
+                            <div class="card-header border-bottom">
+                                <div class="card-title">
+                                    <i class="fa-solid fa-file-code"></i>
+                                    <h3>Plain Text Extracted From Document</h3>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <pre class="resume-raw-text">{{ session.get('resume_text') }}</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Sidebar Career Coach Chat Widget -->
+                <aside class="dashboard-sidebar">
+                    <div class="card coach-card">
+                        <div class="coach-header">
+                            <div class="coach-avatar">
+                                <i class="fa-solid fa-robot"></i>
+                                <span class="avatar-pulse"></span>
+                            </div>
+                            <div class="coach-meta">
+                                <h3>AI Resume Coach</h3>
+                                {% if session.get('api_key') %}
+                                <p class="text-muted" style="color: var(--success) !important;">Online & Ready</p>
+                                {% else %}
+                                <p class="text-muted">Offline (Needs API Key)</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Chat Message log -->
+                        <div class="chat-messages-container">
+                            {% for msg in session.get('chat_history', []) %}
+                            <div class="chat-message {% if msg['role'] == 'user' %}user{% else %}assistant{% endif %}">
+                                <div class="msg-bubble">
+                                    {% if msg['html'] %}
+                                        {{ msg['html'] | safe }}
+                                    {% else %}
+                                        <p>{{ msg['text'] }}</p>
+                                    {% endif %}
+                                    
+                                    <!-- Render suggestions inside first bot message (Jinja2 session length check) -->
+                                    {% if loop.first and loop.length == 1 and session.get('api_key') %}
+                                    <div class="chat-suggestions">
+                                        <form action="/chat" method="POST" style="margin-bottom: 6px;">
+                                            <input type="hidden" name="chat_query" value="How can I make my experience sound more metrics-driven?">
+                                            <button type="submit" class="btn-chat-suggest">How can I make my experience sound more metrics-driven?</button>
+                                        </form>
+                                        <form action="/chat" method="POST" style="margin-bottom: 6px;">
+                                            <input type="hidden" name="chat_query" value="How would you adapt my resume for a Project Manager role?">
+                                            <button type="submit" class="btn-chat-suggest">How would you adapt my resume for a Project Manager role?</button>
+                                        </form>
+                                        <form action="/chat" method="POST">
+                                            <input type="hidden" name="chat_query" value="What are my biggest skills gaps based on the JD?">
+                                            <button type="submit" class="btn-chat-suggest">What are my biggest skills gaps based on the JD?</button>
+                                        </form>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Chat input controls -->
+                        <div class="chat-input-area">
+                            {% if not session.get('api_key') %}
+                            <div class="chat-no-key-warning">
+                                <i class="fa-solid fa-lock"></i> Chat Coach requires a Gemini API Key.
+                            </div>
+                            {% endif %}
+                            
+                            <form class="chat-form" action="/chat" method="POST">
+                                <input type="text" name="chat_query" placeholder="Ask your coach anything about your resume..." autocomplete="off" {% if not session.get('api_key') %}disabled{% endif %}>
+                                <button type="submit" class="btn-send" {% if not session.get('api_key') %}disabled{% endif %}>
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+        {% endif %}
+    </main>
+
+    <!-- Gemini API Settings Modal (Toggled via Hidden Checkbox #api-modal-toggle) -->
+    <div class="modal">
+        <div class="modal-content card">
+            <div class="modal-header border-bottom">
+                <h2>Gemini API Configuration</h2>
+                <label for="api-modal-toggle" class="btn-close-modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </label>
+            </div>
+            
+            <form action="/settings" method="POST">
+                <div class="modal-body">
+                    <p>Unlock deep AI reviews, STAR method bullet-point enhancements, skills gap analyses, and live chat coaching. Your key remains client-side in Flask cookies.</p>
+                    
+                    <div class="form-group">
+                        <label for="input-api-key">Gemini API Key</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" name="api_key" id="input-api-key" placeholder="AIzaSy..." value="{{ session.get('api_key', '') }}">
+                        </div>
+                        <span class="input-hint">Get a free key from <a href="https://aistudio.google.com/" target="_blank" rel="noopener">Google AI Studio <i class="fa-solid fa-arrow-up-right-from-square"></i></a></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="select-model">AI Model Selection</label>
+                        <select name="model" id="select-model">
+                            <option value="gemini-2.5-flash" {% if session.get('model') == 'gemini-2.5-flash' %}selected{% endif %}>Gemini 2.5 Flash (Recommended - Fast & Free)</option>
+                            <option value="gemini-2.5-pro" {% if session.get('model') == 'gemini-2.5-pro' %}selected{% endif %}>Gemini 2.5 Pro (Detailed Review)</option>
+                            <option value="gemini-1.5-flash" {% if session.get('model') == 'gemini-1.5-flash' %}selected{% endif %}>Gemini 1.5 Flash (Legacy)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="modal-footer border-top">
+                    <!-- Standard html forms buttons (zero JS) -->
+                    <button type="submit" name="action" value="clear" class="btn btn-secondary" onclick="document.getElementById('input-api-key').value=''">Delete Key</button>
+                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
